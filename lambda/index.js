@@ -56,9 +56,29 @@ async function sendFunc(replyToken, mes) {
 }
 
 async function messageFunc(event) {
+    let message;
+    switch(event.message.type){
+        case 'message':
+            message = await messagTextFunc(event)
+            break;
+    }
+    
   let message = "";
   message = { type: "text", text: `メッセージイベント` };
+  
   return message;
+}
+
+//普通のメッセージテキストが送られてきた時の関数
+async function messagTextFunc(event){
+    const user_message = event.message.text
+    let return_message;
+    if(user_message === '1' || user_message === '2' || user_message === '3' || user_message === '4' || user_message === '5' || user_message === '6' || user_message === '7' || user_message === '8'){
+        //${user_message}組で登録します。よろしいですかメッセージを送る。OKな場合はポストバックで送信する cancel&${user_message} or ok&${user_message}
+    }else{
+        //定型文を返す
+        return_message = {type:'text',text:'モザイクアートを作るべく、玉川高校での思い出の写真を募集しています。是非このトークに写真を送ってください。質問などは個別に対応していませんが、お問い合わせ内容の頭に # を付けて送っていただくと対応いたします。'}
+    }
 }
 
 async function followFunc(event){
@@ -68,5 +88,9 @@ return  [{ type: "text", text: "追加ありがとうございます！みんな
 
 //クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
 async function postbackFunc(event){
+    //event.message.textを.split('&')してできた配列[0]で判定する
 
+    //[0] === 'cancel'なら友達追加した時に送ったメッセージを送る
+
+    //[0] === 'ok'　なら [1]のクラスをdynamoDBに保存する
 }
