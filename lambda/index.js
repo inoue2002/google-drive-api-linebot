@@ -55,11 +55,11 @@ async function sendFunc(replyToken, mes) {
   return result;
 }
 
-async function messageFunc(event) {
+async function message(event) {
   let message;
   switch (event.message.type) {
-    case "message":
-      message = await messagTextFunc(event);
+    case "text":
+      message = await textFunc(event);
       break;
     case "image":
       message = await imageFunc(event);
@@ -75,7 +75,7 @@ async function messageFunc(event) {
 }
 
 //普通のメッセージテキストが送られてきた時の関数
-async function messagTextFunc(event) {
+async function textFunc(event) {
   const user_message = event.message.text;
   let return_message;
   if (
