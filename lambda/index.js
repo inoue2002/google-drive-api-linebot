@@ -4,8 +4,9 @@ const crypto = require("crypto");
 const line = require("@line/bot-sdk");
 const AWS = require("aws-sdk");
 const Request = require("request");
-const axios = require("axios")
+const axios = require("axios");
 const { head } = require("request");
+const querystring = require("querystring");
 
 // インスタンス生成
 const client = new line.Client({ channelAccessToken: process.env.ACCESSTOKEN });
@@ -78,7 +79,8 @@ async function messageFunc(event) {
       message = await imageFunc(event);
       break;
     case "video":
-      message = { type: "text", text: "動画は現在受け付けていないです！" };
+      message = { type: "text", text: "動画は現在受け付けていないです!!画像をお願いします!!" };
+      break;
     default:
       message = {
         type: "text",
@@ -93,7 +95,30 @@ async function messageFunc(event) {
 async function textFunc(event) {
   const user_message = event.message.text;
   let return_message;
-  if (
+  //splitで頭文字を取得する
+  //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
+  const headText = user_message.split("");
+  if (headText[0] === "#" || headText === "＃") {
+    const profile = await client.getProfile(event.source.userId);
+    //linebotifyを飛ばす
+    axios.post(
+      "https://notify-api.line.me/api/notify",
+      querystring.stringify({
+        message: `${profile.displayName}さんからお問い合わせ[${event.message.text}]`,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: "Bearer " + process.env.NotifyToken,
+        },
+      }
+    );
+    return_message = {
+      type: "text",
+      text:
+        "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
+    };
+  } else if (
     user_message === "1" ||
     user_message === "2" ||
     user_message === "3" ||
@@ -168,59 +193,33 @@ async function followFunc() {
 
 //クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
 async function postbackFunc(event) {
-  const profile = await client.getProfile(event.source.userId);
   let return_message;
-  //splitで頭文字を取得する
-  //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
-  const headText = event.postback.data.split("");
-  if (headText[0] === "#" || headText === '＃') {
-    //linebotifyを飛ばす
-    axios.post(
-      "https://notify-api.line.me/api/notify",
-      querystring.stringify({
-        message: `${profile.displayName}さんからお問い合わせ[${event.message.text}]`
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: "Bearer " + process.env.NotifyToken
-        }
-      }
-    );
+  //event.message.textを.split('&')してできた配列[0]で判定する
+  const user_postback_data = event.postback.data.split("&");
+  if (user_postback_data[0] === "ok") {
+    //DBにユーザーIDとクラス(user_postback_data[1])を保存する
+    const profile = await client.getProfile(event.source.userId);
 
+    const putParams = {
+      TableName: "graduation-pj",
+      Item: {
+        userId: event.source.userId,
+        classNumber: user_postback_data[1],
+        name: profile.displayName,
+      },
+    };
+    docClient.put(putParams).promise();
     return_message = {
       type: "text",
-      text:
-        "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
+      text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
     };
+  } else if (user_postback_data[0] === "cancel") {
+    return_message = choseClassMessage();
   } else {
-    //event.message.textを.split('&')してできた配列[0]で判定する
-    const user_postback_data = event.postback.data.split("&");
-    if (user_postback_data[0] === "ok") {
-      //DBにユーザーIDとクラス(user_postback_data[1])を保存する
-      const profile = await client.getProfile(event.source.userId);
-
-      const putParams = {
-        TableName: "graduation-pj",
-        Item: {
-          userId: event.source.userId,
-          classNumber: user_postback_data[1],
-          name: profile.displayName,
-        },
-      };
-      docClient.put(putParams).promise();
-      return_message = {
-        type: "text",
-        text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
-      };
-    } else if (user_postback_data[0] === "cancel") {
-      return_message = choseClassMessage();
-    } else {
-      return_message = {
-        type: "text",
-        text: "エラーが発生しました。時間を開けてから再度お試しください。",
-      };
-    }
+    return_message = {
+      type: "text",
+      text: "エラーが発生しました。時間を開けてから再度お試しください。",
+    };
   }
   return return_message;
 }
