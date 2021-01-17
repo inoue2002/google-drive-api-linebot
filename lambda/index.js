@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const line = require("@line/bot-sdk");
 const AWS = require("aws-sdk");
+const Request = require("request");
 
 // インスタンス生成
 const client = new line.Client({ channelAccessToken: process.env.ACCESSTOKEN });
@@ -14,8 +15,6 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.S3KEY,
 });
 const docClient = new AWS.DynamoDB.DocumentClient();
-
-
 
 exports.handler = (event) => {
   const signature = crypto
@@ -30,6 +29,7 @@ exports.handler = (event) => {
   // 署名検証が成功した場合
   if (signature === checkHeader) {
     events.forEach(async (event) => {
+      console.log(`起動`);
       let message;
       switch (event.type) {
         case "message":
@@ -75,6 +75,8 @@ async function messageFunc(event) {
     case "image":
       message = await imageFunc(event);
       break;
+      case "video":
+        message = {type:'text',text:'動画は現在受け付けていないです！'}
     default:
       message = {
         type: "text",
@@ -114,15 +116,40 @@ async function textFunc(event) {
 
 //画像をs3に投げる関数
 async function imageFunc(event) {
+  const date = new Date();
+  const stamp = date.getTime();
   //コンテンツIDから画像データを取得する
 
-  //取得したデータをS#にアップロードする
-
-  return {
-    type: "text",
-    text:
-      "写真の提供ありがとうございます！まだまだ募集しているのでジャンジャン送ってください！",
+  const upImageParams = {
+    Bucket: "graduation-pj",
+    Key: `${event.source.userId}_${stamp}.jpg`,
   };
+
+  upImageParams.Body = await downloadFunc(event);
+  const res = await s3.putObject(upImageParams).promise();
+  if (res.ETag !== undefined) {
+    return null;
+  }
+}
+//コンテンツを取得する
+function downloadFunc(event) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      url: `https://api.line.me/v2/bot/message/${event.message.id}/content`,
+      method: "get",
+      headers: {
+        Authorization: "Bearer " + process.env.ACCESSTOKEN,
+      },
+      encoding: null,
+    };
+    Request(options, (error, response, body) => {
+      if (error) reject(error);
+      if (response.statusCode != 200) {
+        reject("Invalid status code <" + response.statusCode + ">");
+      }
+      resolve(body);
+    });
+  });
 }
 
 async function followFunc(event) {
@@ -156,8 +183,11 @@ async function postbackFunc(event) {
     const user_postback_data = event.postback.data.split("&");
     if (user_postback_data[0] === "ok") {
       //DBにユーザーIDとクラス(user_postback_data[1])を保存する
-      const profile = await client.getProfile(event.source.userId)
-      return_message = {type:'text',text:`${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`}
+      const profile = await client.getProfile(event.source.userId);
+      return_message = {
+        type: "text",
+        text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
+      };
     } else if (user_postback_data[0] === "cancel") {
       return_message = choseClassMessage();
     } else {
