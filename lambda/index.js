@@ -61,11 +61,10 @@ async function messageFunc(event) {
         case 'message':
             message = await messagTextFunc(event)
             break;
+            default:
+              message = {type:'text',text:'エラーが発生しました。少し時間を開けてお試しください。'}
+              break
     }
-    
-  let message = "";
-  message = { type: "text", text: `メッセージイベント` };
-  
   return message;
 }
 
