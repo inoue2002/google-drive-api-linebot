@@ -24,11 +24,8 @@ exports.handler = (event) => {
         case "message":
           message = await messageFunc(event);
           break;
-        case "postback":
-          message = await postbackFunc(event);
-          break;
         case "follow":
-          message = { type: "text", text: "追加ありがとうございます！" };
+          message = { type: "text", text: "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください" };
           break;
       }
       // メッセージを返信
@@ -60,8 +57,4 @@ async function messageFunc(event) {
   message = { type: "text", text: `メッセージイベント` };
   return message;
 }
-const postbackFunc = async function (event) {
-  let message = "";
-  message = { type: "text", text: "ポストバックイベント" };
-  return message;
-};
+
