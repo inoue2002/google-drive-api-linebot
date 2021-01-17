@@ -25,7 +25,8 @@ exports.handler = (event) => {
           message = await messageFunc(event);
           break;
         case "follow":
-          message = { type: "text", text: "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください" };
+            message = await followFunc(event)
+         
           break;
       }
       // メッセージを返信
@@ -58,3 +59,6 @@ async function messageFunc(event) {
   return message;
 }
 
+async function followFunc(event){
+return  { type: "text", text: "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください" };
+}
