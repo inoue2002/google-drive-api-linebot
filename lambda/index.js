@@ -55,7 +55,7 @@ async function sendFunc(replyToken, mes) {
   return result;
 }
 
-async function message(event) {
+async function messageFunc(event) {
   let message;
   switch (event.message.type) {
     case "text":
@@ -96,6 +96,7 @@ async function textFunc(event) {
       text:
         "モザイクアートを作るべく、玉川高校での思い出の写真を募集しています。是非このトークに写真を送ってください。質問などは個別に対応していませんが、お問い合わせ内容の頭に # を付けて送っていただくと対応いたします。",
     };
+    return return_message;
   }
 }
 
@@ -131,7 +132,7 @@ async function postbackFunc(event) {
   //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
   //event.message.textを.split('&')してできた配列[0]で判定する
   //[0] === 'cancel'なら友達追加した時に送ったメッセージを送る
-  //[0] === 'ok'　なら [1]のクラスをdynamoDBに保存する
+  //[0] === 'ok'なら [1]のクラスをdynamoDBに保存する
 }
 
 //クラス選択のメッセージを返す関数
