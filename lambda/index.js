@@ -89,6 +89,7 @@ async function textFunc(event) {
     user_message === "8"
   ) {
     //${user_message}組で登録します。よろしいですかメッセージを送る。OKな場合はポストバックで送信する cancel&${user_message} or ok&${user_message}
+    return_message = submittClassMessage(event.message.text);
   } else {
     //定型文を返す
     return_message = {
@@ -96,8 +97,8 @@ async function textFunc(event) {
       text:
         "モザイクアートを作るべく、玉川高校での思い出の写真を募集しています。是非このトークに写真を送ってください。質問などは個別に対応していませんが、お問い合わせ内容の頭に # を付けて送っていただくと対応いたします。",
     };
-    return return_message;
   }
+  return return_message;
 }
 
 //画像をs3に投げる関数
@@ -115,7 +116,7 @@ async function imageFunc(event) {
 
 async function followFunc(event) {
   //クラスを選択してくださいメッセージも送る
-  const chooseClassMessage = chooseClassMessage();
+  const chooseClassMessage = choseClassMessage();
   return [
     {
       type: "text",
@@ -138,14 +139,187 @@ async function postbackFunc(event) {
 //クラス選択のメッセージを返す関数
 function choseClassMessage() {
   return {
-    type: "text",
-    text: "あなたのクラスを選択してください",
+    type: "flex",
+    altText: "flexMessageです",
+    contents: {
+      type: "bubble",
+      direction: "ltr",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        borderWidth: "10px",
+        borderColor: "#E8F07D",
+        cornerRadius: "5px",
+        contents: [
+          {
+            type: "text",
+            text: "あなたのクラスを教えてください",
+            weight: "bold",
+            size: "md",
+            align: "center",
+            margin: "none",
+            contents: [],
+          },
+          {
+            type: "separator",
+          },
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "1",
+                  text: "1",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "2",
+                  text: "2",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "3",
+                  text: "3",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "4",
+                  text: "4",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
+          },
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "5",
+                  text: "5",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "6",
+                  text: "6",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "7",
+                  text: "7",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "8",
+                  text: "8",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
+          },
+        ],
+      },
+    },
   };
 }
 //クラス決定のメッセージ返す関数
 function submittClassMessage(classNmber) {
   return {
-    type: "text",
-    text: "あなたのクラスはxxであっていますか？",
+    type: "flex",
+    altText: `あなたは${classNmber}ですか？`,
+    contents: {
+      type: "bubble",
+      direction: "ltr",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        borderWidth: "10px",
+        borderColor: "#E8F07D",
+        cornerRadius: "5px",
+        contents: [
+          {
+            type: "text",
+            text: `${classNmber}組で間違いないですか？`,
+            weight: "bold",
+            size: "md",
+            align: "center",
+            margin: "none",
+            contents: [],
+          },
+          {
+            type: "separator",
+          },
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
+              {
+                type: "button",
+                action: {
+                  type: "postback",
+                  label: "はい",
+                  data: `ok&${classNmber}`,
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+              {
+                "type": "button",
+                "action": {
+                  "type": "postback",
+                  "label": "キャンセル",
+                  "data": `cancel&${classNmber}`
+                },
+                "color": "#C0D9DAFF",
+                "style": "primary"
+              }
+            ],
+          },
+        ],
+      },
+    },
   };
 }
