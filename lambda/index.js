@@ -61,9 +61,9 @@ async function messageFunc(event) {
     case "message":
       message = await messagTextFunc(event);
       break;
-      case 'image':
-        message = await imageFunc(event);
-        break;
+    case "image":
+      message = await imageFunc(event);
+      break;
     default:
       message = {
         type: "text",
@@ -100,18 +100,18 @@ async function messagTextFunc(event) {
 }
 
 //画像をs3に投げる関数
-async function imageFunc(event){
-
-}
+async function imageFunc(event) {}
 
 async function followFunc(event) {
   //クラスを選択してくださいメッセージも送る
+  const chooseClassMessage = chooseClassMessage();
   return [
     {
       type: "text",
       text:
         "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください",
     },
+    chooseClassMessage,
   ];
 }
 
@@ -119,8 +119,22 @@ async function followFunc(event) {
 async function postbackFunc(event) {
   //splitで頭文字を取得する
   //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
-
   //event.message.textを.split('&')してできた配列[0]で判定する
   //[0] === 'cancel'なら友達追加した時に送ったメッセージを送る
   //[0] === 'ok'　なら [1]のクラスをdynamoDBに保存する
+}
+
+//クラス選択のメッセージを返す関数
+function choseClassMessage() {
+  return {
+    type: "text",
+    text: "あなたのクラスを選択してください",
+  };
+}
+//クラス決定のメッセージ返す関数
+function submittClassMessage(classNmber) {
+  return {
+    type: "text",
+    text: "あなたのクラスはxxであっていますか？",
+  };
 }
