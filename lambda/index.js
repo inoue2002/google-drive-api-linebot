@@ -100,7 +100,17 @@ async function messagTextFunc(event) {
 }
 
 //画像をs3に投げる関数
-async function imageFunc(event) {}
+async function imageFunc(event) {
+  //コンテンツIDから画像データを取得する
+
+  //取得したデータをS#にアップロードする
+
+  return {
+    type: "text",
+    text:
+      "写真の提供ありがとうございます！まだまだ募集しているのでジャンジャン送ってください！",
+  };
+}
 
 async function followFunc(event) {
   //クラスを選択してくださいメッセージも送る
