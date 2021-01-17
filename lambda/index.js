@@ -2,9 +2,20 @@
 // モジュール呼び出し
 const crypto = require("crypto");
 const line = require("@line/bot-sdk");
+const AWS = require("aws-sdk");
 
 // インスタンス生成
 const client = new line.Client({ channelAccessToken: process.env.ACCESSTOKEN });
+
+const s3 = new AWS.S3({
+  region: "ap-northeast-1",
+  apiVersion: "2012-08-10",
+  accessKeyId: process.env.S3ID,
+  secretAccessKey: process.env.S3KEY,
+});
+const docClient = new AWS.DynamoDB.DocumentClient();
+
+
 
 exports.handler = (event) => {
   const signature = crypto
@@ -129,11 +140,34 @@ async function followFunc(event) {
 
 //クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
 async function postbackFunc(event) {
+  let return_message;
   //splitで頭文字を取得する
   //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
-  //event.message.textを.split('&')してできた配列[0]で判定する
-  //[0] === 'cancel'なら友達追加した時に送ったメッセージを送る
-  //[0] === 'ok'なら [1]のクラスをdynamoDBに保存する
+  const headText = event.postback.data.split("");
+  if (headText[0] === "#") {
+    //linebotifyを飛ばす
+    return_message = {
+      type: "text",
+      text:
+        "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
+    };
+  } else {
+    //event.message.textを.split('&')してできた配列[0]で判定する
+    const user_postback_data = event.postback.data.split("&");
+    if (user_postback_data[0] === "ok") {
+      //DBにユーザーIDとクラス(user_postback_data[1])を保存する
+      const profile = await client.getProfile(event.source.userId)
+      return_message = {type:'text',text:`${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`}
+    } else if (user_postback_data[0] === "cancel") {
+      return_message = choseClassMessage();
+    } else {
+      return_message = {
+        type: "text",
+        text: "エラーが発生しました。時間を開けてから再度お試しください。",
+      };
+    }
+  }
+  return return_message;
 }
 
 //クラス選択のメッセージを返す関数
@@ -307,15 +341,15 @@ function submittClassMessage(classNmber) {
                 style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "postback",
-                  "label": "キャンセル",
-                  "data": `cancel&${classNmber}`
+                type: "button",
+                action: {
+                  type: "postback",
+                  label: "キャンセル",
+                  data: `cancel&${classNmber}`,
                 },
-                "color": "#C0D9DAFF",
-                "style": "primary"
-              }
+                color: "#C0D9DAFF",
+                style: "primary",
+              },
             ],
           },
         ],
