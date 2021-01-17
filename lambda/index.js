@@ -4,6 +4,8 @@ const crypto = require("crypto");
 const line = require("@line/bot-sdk");
 const AWS = require("aws-sdk");
 const Request = require("request");
+const axios = require("axios")
+const { head } = require("request");
 
 // インスタンス生成
 const client = new line.Client({ channelAccessToken: process.env.ACCESSTOKEN });
@@ -39,7 +41,7 @@ exports.handler = (event) => {
           message = await postbackFunc(event);
           break;
         case "follow":
-          message = await followFunc(event);
+          message = await followFunc();
           break;
       }
       // メッセージを返信
@@ -75,8 +77,8 @@ async function messageFunc(event) {
     case "image":
       message = await imageFunc(event);
       break;
-      case "video":
-        message = {type:'text',text:'動画は現在受け付けていないです！'}
+    case "video":
+      message = { type: "text", text: "動画は現在受け付けていないです！" };
     default:
       message = {
         type: "text",
@@ -118,7 +120,6 @@ async function textFunc(event) {
 async function imageFunc(event) {
   const date = new Date();
   const stamp = date.getTime();
-  //コンテンツIDから画像データを取得する
 
   const upImageParams = {
     Bucket: "graduation-pj",
@@ -152,7 +153,7 @@ function downloadFunc(event) {
   });
 }
 
-async function followFunc(event) {
+async function followFunc() {
   //クラスを選択してくださいメッセージも送る
   const chooseClassMessage = choseClassMessage();
   return [
@@ -167,12 +168,26 @@ async function followFunc(event) {
 
 //クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
 async function postbackFunc(event) {
+  const profile = await client.getProfile(event.source.userId);
   let return_message;
   //splitで頭文字を取得する
   //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
   const headText = event.postback.data.split("");
-  if (headText[0] === "#") {
+  if (headText[0] === "#" || headText === '＃') {
     //linebotifyを飛ばす
+    axios.post(
+      "https://notify-api.line.me/api/notify",
+      querystring.stringify({
+        message: `${profile.displayName}さんからお問い合わせ[${event.message.text}]`
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: "Bearer " + process.env.NotifyToken
+        }
+      }
+    );
+
     return_message = {
       type: "text",
       text:
@@ -184,6 +199,16 @@ async function postbackFunc(event) {
     if (user_postback_data[0] === "ok") {
       //DBにユーザーIDとクラス(user_postback_data[1])を保存する
       const profile = await client.getProfile(event.source.userId);
+
+      const putParams = {
+        TableName: "graduation-pj",
+        Item: {
+          userId: event.source.userId,
+          classNumber: user_postback_data[1],
+          name: profile.displayName,
+        },
+      };
+      docClient.put(putParams).promise();
       return_message = {
         type: "text",
         text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
