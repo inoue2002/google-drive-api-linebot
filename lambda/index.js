@@ -24,9 +24,11 @@ exports.handler = (event) => {
         case "message":
           message = await messageFunc(event);
           break;
+          case "postback":
+            message = await postbackFunc(event);
+            break;
         case "follow":
             message = await followFunc(event)
-         
           break;
       }
       // メッセージを返信
@@ -60,5 +62,11 @@ async function messageFunc(event) {
 }
 
 async function followFunc(event){
-return  { type: "text", text: "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください" };
+    //クラスを選択してくださいメッセージも送る
+return  [{ type: "text", text: "追加ありがとうございます！みんなで画像を集めて卒業記念のモザイクアートを完成させましょう！ご協力ください" }];
+}
+
+//クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
+async function postbackFunc(event){
+
 }
