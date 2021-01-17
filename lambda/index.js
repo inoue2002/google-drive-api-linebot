@@ -117,6 +117,9 @@ async function followFunc(event) {
 
 //クラスが決定した時にDBにユーザーIDとクラス番号を保存する関数
 async function postbackFunc(event) {
+  //splitで頭文字を取得する
+  //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
+
   //event.message.textを.split('&')してできた配列[0]で判定する
   //[0] === 'cancel'なら友達追加した時に送ったメッセージを送る
   //[0] === 'ok'　なら [1]のクラスをdynamoDBに保存する
