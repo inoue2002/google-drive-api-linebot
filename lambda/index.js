@@ -31,6 +31,39 @@ exports.handler = (event) => {
 
   // 署名検証が成功した場合
   if (signature === checkHeader) {
+    //画像メッセージがいくつあるか数える/一枚以上あった場合はその枚数を通知する「画像1枚ありがとう！」 DBにその数字でアップデートしていく
+
+    //送ってきたユーザーが異なる場合もあるので、一枚一枚で対処する必要がある
+    let score = 0;
+    let infoToken;
+    let userId;
+    for (let i = 0; i < events.length; i++) {
+      console.log(events[i]);
+      if (events[i].type === "message") {
+        console.log(events[i].type);
+        if (events[i].message.type === "image") {
+          score = score + 1;
+          infoToken = events[i].replyToken;
+          userId = events[i].userId;
+        }
+      }
+    }
+    if (score > 0) {
+      client.replyMessage(infoToken, {
+        type: "text",
+        text: `${score}枚の写真を確認しました！ありがとう！`,
+      });
+      console.log(`結果発表`, score, infoToken);
+      const scorePutParams = {
+        TableName: "graduation-pj",
+        Item: {
+          userId: userId,
+          type: "score",
+          score: 0,
+        },
+      };
+      docClient.put(scorePutParams).promise();
+    }
     events.forEach(async (event) => {
       console.log(`起動`);
       let message;
@@ -43,6 +76,9 @@ exports.handler = (event) => {
           break;
         case "follow":
           message = await followFunc();
+          break;
+        case "unfollow":
+          //リッチメニューを初期化する
           break;
       }
       // メッセージを返信
@@ -79,8 +115,15 @@ async function messageFunc(event) {
       message = await imageFunc(event);
       break;
     case "video":
-      message = { type: "text", text: "動画は現在受け付けていないです!!画像をお願いします!!" };
+      message = {
+        type: "text",
+        text: "動画は現在受け付けていないです!!画像をお願いします!!",
+      };
       break;
+    case "sticker":
+      message = await stickerFunc(event);
+      break;
+
     default:
       message = {
         type: "text",
@@ -99,25 +142,7 @@ async function textFunc(event) {
   //頭文字が # or ＃ だった場合notifyを管理者グループに飛ばす
   const headText = user_message.split("");
   if (headText[0] === "#" || headText === "＃") {
-    const profile = await client.getProfile(event.source.userId);
-    //linebotifyを飛ばす
-    axios.post(
-      "https://notify-api.line.me/api/notify",
-      querystring.stringify({
-        message: `${profile.displayName}さんからお問い合わせ[${event.message.text}]`,
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: "Bearer " + process.env.NotifyToken,
-        },
-      }
-    );
-    return_message = {
-      type: "text",
-      text:
-        "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
-    };
+    return_message = await notify(event);
   } else if (
     user_message === "1" ||
     user_message === "2" ||
@@ -130,6 +155,8 @@ async function textFunc(event) {
   ) {
     //${user_message}組で登録します。よろしいですかメッセージを送る。OKな場合はポストバックで送信する cancel&${user_message} or ok&${user_message}
     return_message = submittClassMessage(event.message.text);
+  } else if (user_message === "画像を送る") {
+    return_message = bosyuMessage();
   } else {
     //定型文を返す
     return_message = {
@@ -141,7 +168,7 @@ async function textFunc(event) {
   return return_message;
 }
 
-//画像をs3に投げる関数
+//コンテンツを取得し、gogleDriveにアップロードする
 async function imageFunc(event) {
   const date = new Date();
   const stamp = date.getTime();
@@ -181,6 +208,8 @@ function downloadFunc(event) {
 async function followFunc() {
   //クラスを選択してくださいメッセージも送る
   const chooseClassMessage = choseClassMessage();
+
+  //DBのスコアを0にする
   return [
     {
       type: "text",
@@ -204,6 +233,7 @@ async function postbackFunc(event) {
       TableName: "graduation-pj",
       Item: {
         userId: event.source.userId,
+        type: "class",
         classNumber: user_postback_data[1],
         name: profile.displayName,
       },
@@ -213,6 +243,7 @@ async function postbackFunc(event) {
       type: "text",
       text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
     };
+    //リッチメニューを募集用に変更する
   } else if (user_postback_data[0] === "cancel") {
     return_message = choseClassMessage();
   } else {
@@ -228,7 +259,7 @@ async function postbackFunc(event) {
 function choseClassMessage() {
   return {
     type: "flex",
-    altText: "flexMessageです",
+    altText: "クラスを設定してください",
     contents: {
       type: "bubble",
       direction: "ltr",
@@ -410,4 +441,158 @@ function submittClassMessage(classNmber) {
       },
     },
   };
+}
+
+function bosyuMessage() {
+  return {
+    type: "flex",
+    altText: "flexMessageです",
+    contents: {
+      type: "bubble",
+      direction: "ltr",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        borderWidth: "10px",
+        borderColor: "#E8F07D",
+        cornerRadius: "5px",
+        contents: [
+          {
+            type: "text",
+            text: "【玉高の思い出】写真募集中!!",
+            weight: "bold",
+            size: "md",
+            align: "center",
+            margin: "none",
+            contents: [],
+          },
+          {
+            type: "separator",
+          },
+          {
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
+              {
+                type: "button",
+                action: {
+                  type: "uri",
+                  label: "送る画像を選ぶ",
+                  uri: "https://line.me/R/nv/cameraRoll/multi",
+                },
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            spacing: "none",
+            margin: "none",
+            contents: [
+              {
+                type: "text",
+                text: "※3枚ずつ送って欲しいです..",
+                size: "sm",
+                contents: [],
+              },
+              {
+                type: "text",
+                text: "※正常に受け取れなくなります",
+                size: "sm",
+                contents: [],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
+async function stickerFunc(event) {
+  let message;
+  let randomNumber = Math.floor(Math.random() * 11); // 0~10の乱数を生成
+
+  const stickerMesArry = [
+    {
+      type: "sticker",
+      packageId: "11539",
+      stickerId: "52114122",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002735",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002759",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002767",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002768",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002771",
+    },
+    {
+      type: "sticker",
+      packageId: "11537",
+      stickerId: "52002738",
+    },
+    {
+      type: "sticker",
+      packageId: "11538",
+      stickerId: "51626503",
+    },
+    {
+      type: "sticker",
+      packageId: "11538",
+      stickerId: "51626518",
+    },
+    {
+      type: "sticker",
+      packageId: "11539",
+      stickerId: "52114125",
+    },
+  ];
+
+  message = stickerMesArry[randomNumber];
+  return message;
+}
+
+async function notify(event) {
+  let return_message;
+  const profile = await client.getProfile(event.source.userId);
+  //linebotifyを飛ばす
+  axios.post(
+    "https://notify-api.line.me/api/notify",
+    querystring.stringify({
+      message: `${profile.displayName}さんからお問い合わせ[${event.message.text}]`,
+    }),
+    {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: "Bearer " + process.env.NotifyToken,
+      },
+    }
+  );
+  return_message = {
+    type: "text",
+    text: "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
+  };
+  return return_message
 }
