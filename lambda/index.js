@@ -3,20 +3,14 @@
 const crypto = require("crypto");
 const line = require("@line/bot-sdk");
 const AWS = require("aws-sdk");
-const Request = require("request");
 const axios = require("axios");
-const { head } = require("request");
-const querystring = require("querystring");
+const privatekey = require("./privatekey.json");
+const  querystring = require('querystring')
+const { google } = require("googleapis");
 
 // インスタンス生成
 const client = new line.Client({ channelAccessToken: process.env.ACCESSTOKEN });
 
-const s3 = new AWS.S3({
-  region: "ap-northeast-1",
-  apiVersion: "2012-08-10",
-  accessKeyId: process.env.S3ID,
-  secretAccessKey: process.env.S3KEY,
-});
 const docClient = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = (event) => {
@@ -27,13 +21,10 @@ exports.handler = (event) => {
   const checkHeader = (event.headers || {})["X-Line-Signature"];
   const body = JSON.parse(event.body);
   const events = body.events;
-  console.log(events);
 
   // 署名検証が成功した場合
   if (signature === checkHeader) {
-
     events.forEach(async (event) => {
-      console.log(`起動`);
       let message;
       switch (event.type) {
         case "message":
@@ -43,19 +34,16 @@ exports.handler = (event) => {
           message = await postbackFunc(event);
           break;
         case "follow":
-          message = await followFunc();
+          message = await followFunc(event);
           break;
         case "unfollow":
           //リッチメニューを初期化する
           break;
       }
-      // メッセージを返信
-      if (message != undefined) {
-        await sendFunc(body.events[0].replyToken, message);
-        // .then(console.log)
-        // .catch(console.log);
-        return;
+      if (message !== undefined) {
+        client.replyMessage(event.replyToken, message);
       }
+      return;
     });
   }
   // 署名検証に失敗した場合
@@ -63,15 +51,6 @@ exports.handler = (event) => {
     console.log("署名認証エラー");
   }
 };
-
-async function sendFunc(replyToken, mes) {
-  const result = new Promise(function (resolve, reject) {
-    client.replyMessage(replyToken, mes).then((response) => {
-      resolve("送信完了");
-    });
-  });
-  return result;
-}
 
 async function messageFunc(event) {
   let message;
@@ -136,47 +115,87 @@ async function textFunc(event) {
   return return_message;
 }
 
-//コンテンツを取得し、gogleDriveにアップロードする
+//グーグルにログインし、コンテンツを取得してドライブにアップロードする
 async function imageFunc(event) {
   const date = new Date();
   const stamp = date.getTime();
+  let message;
+  //DBからクラスを取得する
 
-  const upImageParams = {
-    Bucket: "graduation-pj",
-    Key: `${event.source.userId}_${stamp}.jpg`,
+  //クラスの取得に失敗した場合は、クラスを設定してくださいメッセージを返す
+
+  //クラスがわかった場合
+  const imageId = await Promise.resolve()
+    .then(function () {
+      return new Promise(function (resolve, reject) {
+        //JWT auth clientの設定
+        const jwtClient = new google.auth.JWT(
+          privatekey.client_email,
+          null,
+          privatekey.private_key,
+          ["https://www.googleapis.com/auth/drive"]
+        );
+        //authenticate request
+        jwtClient.authorize(function (err, tokens) {
+          if (err) {
+            reject(err);
+          } else {
+            //認証成功
+            resolve(jwtClient);
+          }
+        });
+      });
+    })
+    .then(function (jwtClient) {
+      return new Promise(async function (resolve, reject) {
+        const drive = google.drive({ version: "v3", auth: jwtClient });
+        const imageStream = await client.getMessageContent(event.message.id);
+        //ファイル名は${classNumber}-${event.source.userId}-${stamp}.jpg
+        //保存先はクラスに応じて変える
+        var fileMetadata = {
+          name: `jwt-${event.source.userId}-${stamp}.jpg`,
+          parents: ["1OvCSUaVTUfTQ-aSidn9lOOa0oHKYKcWl"],
+        };
+        var media = {
+          mimeType: "image/jpeg",
+          body: imageStream,
+        };
+        await drive.files.create(
+          {
+            resource: fileMetadata,
+            media: media,
+            fields: "id",
+          },
+          function (err, file) {
+            if (err) {
+              // Handle error
+              console.error(err);
+            } else {
+              resolve(file.data.id);
+            }
+          }
+        );
+      });
+    });
+  message = {
+    type: "text",
+    text: `保存に成功したよ！https://drive.google.com/uc?id=${imageId}`,
   };
 
-  upImageParams.Body = await downloadFunc(event);
-  const res = await s3.putObject(upImageParams).promise();
-  if (res.ETag !== undefined) {
-    return null;
-  }
-}
-//コンテンツを取得する
-function downloadFunc(event) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      url: `https://api.line.me/v2/bot/message/${event.message.id}/content`,
-      method: "get",
-      headers: {
-        Authorization: "Bearer " + process.env.ACCESSTOKEN,
-      },
-      encoding: null,
-    };
-    Request(options, (error, response, body) => {
-      if (error) reject(error);
-      if (response.statusCode != 200) {
-        reject("Invalid status code <" + response.statusCode + ">");
-      }
-      resolve(body);
-    });
-  });
+  //クラスがわからなかった場合
+
+
+  //メッセージを返す
+  return message 
 }
 
-async function followFunc() {
+async function followFunc(event) {
   //クラスを選択してくださいメッセージも送る
   const chooseClassMessage = choseClassMessage();
 
+  //リッチメニューをセットする
+
+  
   //DBのスコアを0にする
   return [
     {
@@ -411,6 +430,7 @@ function submittClassMessage(classNmber) {
   };
 }
 
+//募集を促すメッセージを返す関数
 function bosyuMessage() {
   return {
     type: "flex",
@@ -463,13 +483,7 @@ function bosyuMessage() {
             contents: [
               {
                 type: "text",
-                text: "※3枚ずつ送って欲しいです..",
-                size: "sm",
-                contents: [],
-              },
-              {
-                type: "text",
-                text: "※正常に受け取れなくなります",
+                text: "※高校生活に思い出のある画像の募集です",
                 size: "sm",
                 contents: [],
               },
@@ -481,6 +495,7 @@ function bosyuMessage() {
   };
 }
 
+//ステッカーを一つランダムに返す関数
 async function stickerFunc(event) {
   let message;
   let randomNumber = Math.floor(Math.random() * 11); // 0~10の乱数を生成
@@ -537,11 +552,11 @@ async function stickerFunc(event) {
       stickerId: "52114125",
     },
   ];
-
   message = stickerMesArry[randomNumber];
   return message;
 }
 
+//お問い合わせを送る関数
 async function notify(event) {
   let return_message;
   const profile = await client.getProfile(event.source.userId);
@@ -562,5 +577,5 @@ async function notify(event) {
     type: "text",
     text: "運営へ連絡を送っておきました。返信がくるまでしばしお待ちください。",
   };
-  return return_message
+  return return_message;
 }
