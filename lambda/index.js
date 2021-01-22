@@ -5,7 +5,7 @@ const line = require("@line/bot-sdk");
 const AWS = require("aws-sdk");
 const axios = require("axios");
 const privatekey = require("./privatekey.json");
-const  querystring = require('querystring')
+const querystring = require("querystring");
 const { google } = require("googleapis");
 
 // インスタンス生成
@@ -179,23 +179,35 @@ async function imageFunc(event) {
     });
   message = {
     type: "text",
-    text: `保存に成功したよ！https://drive.google.com/uc?id=${imageId}`,
+    text: `写真を1枚受け付けました!!目指せ1000枚!!🔥`,
   };
 
   //クラスがわからなかった場合
 
+  //DBのpictureプロパティに1追加する
+  const updateParams = {
+    TableName: "graduation-pj",
+    Key: {
+      userId: event.source.userId,
+    },
+    ExpressionAttributeNames: {
+      "#p": "picture",
+    },
+    ExpressionAttributeValues: {
+      ":addPower": 1, //engineのpower属性に92を足す
+    },
+    UpdateExpression: "SET #p = #p + :addPower",
+  };
+   docClient.update(updateParams).promise();
 
   //メッセージを返す
-  return message 
+  return message;
 }
 
-async function followFunc(event) {
+async function followFunc() {
   //クラスを選択してくださいメッセージも送る
   const chooseClassMessage = choseClassMessage();
 
-  //リッチメニューをセットする
-
-  
   //DBのスコアを0にする
   return [
     {
@@ -222,15 +234,17 @@ async function postbackFunc(event) {
         userId: event.source.userId,
         type: "class",
         classNumber: user_postback_data[1],
+        picture: 0,
         name: profile.displayName,
       },
     };
     docClient.put(putParams).promise();
+    //リッチメニューをデフォルトにセットする
+
     return_message = {
       type: "text",
       text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
     };
-    //リッチメニューを募集用に変更する
   } else if (user_postback_data[0] === "cancel") {
     return_message = choseClassMessage();
   } else {
