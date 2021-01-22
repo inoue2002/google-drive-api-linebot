@@ -31,39 +31,7 @@ exports.handler = (event) => {
 
   // 署名検証が成功した場合
   if (signature === checkHeader) {
-    //画像メッセージがいくつあるか数える/一枚以上あった場合はその枚数を通知する「画像1枚ありがとう！」 DBにその数字でアップデートしていく
 
-    //送ってきたユーザーが異なる場合もあるので、一枚一枚で対処する必要がある
-    let score = 0;
-    let infoToken;
-    let userId;
-    for (let i = 0; i < events.length; i++) {
-      console.log(events[i]);
-      if (events[i].type === "message") {
-        console.log(events[i].type);
-        if (events[i].message.type === "image") {
-          score = score + 1;
-          infoToken = events[i].replyToken;
-          userId = events[i].userId;
-        }
-      }
-    }
-    if (score > 0) {
-      client.replyMessage(infoToken, {
-        type: "text",
-        text: `${score}枚の写真を確認しました！ありがとう！`,
-      });
-      console.log(`結果発表`, score, infoToken);
-      const scorePutParams = {
-        TableName: "graduation-pj",
-        Item: {
-          userId: userId,
-          type: "score",
-          score: 0,
-        },
-      };
-      docClient.put(scorePutParams).promise();
-    }
     events.forEach(async (event) => {
       console.log(`起動`);
       let message;
