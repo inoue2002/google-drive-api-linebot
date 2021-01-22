@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const { google } = require("googleapis");
 const readline = require("readline");
 const axios = require("axios");
+const Request = require("request");
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET,
 };
+
 
 const app = express();
 
@@ -41,27 +43,35 @@ const SCOPES = ["https://www.googleapis.com/auth/drive"];
 const TOKEN_PATH = "token.json";
 
 async function handleEvent(event) {
+  let contents = "";
   if (event.message.type === "image") {
     console.log("画像ID", event.message.id);
     //コンテンツIDからデータを取得
     //モジュールではなく、axiosを使う
 
-    const contentsData = await axios.get(
-      `https://api-data.line.me/v2/bot/message/${event.message.id}/content`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`,
-        },
-        data: {},
-      }
-    );
     //バイナリデータが返される
     //console.log(contentsData.data);
 
-    //そのままaxiosでアップロードする
+    //requestモジュールでコンテンツ取得APIを叩く
+    // const options = {
+    //   url: `https://api.line.me/v2/bot/message/${event.message.id}/content`,
+    //   method: "get",
+    //   headers: {
+    //     Authorization: "Bearer " + process.env.CHANNEL_ACCESS_TOKEN,
+    //   },
+    //   encoding: null,
+    // };
+    // Request(options, async function (error, response, body) {
+    //   if (!error && response.statusCode == 200) {
+    //     console.log(body);
+    //     contents = body;
+    //     fs.writeFileSync(`./image.jpg`, body, "binary");
+    //     console.log("file saved");
+    //
+    //   }
+    // });
 
     await authorize(listFiles);
-
     async function authorize(callback) {
       const oAuth2Client = new google.auth.OAuth2(
         process.env.client_id,
@@ -71,6 +81,7 @@ async function handleEvent(event) {
 
       // Check if we have previously stored a token.
       fs.readFile(TOKEN_PATH, (err, token) => {
+        console.log(`token` ,token)
         if (err) {
           console.log(err);
           return getAccessToken(oAuth2Client, callback);
@@ -103,54 +114,44 @@ async function handleEvent(event) {
         });
       });
     }
-    function listFiles(auth) {
+    async function listFiles(auth) {
+      console.log(auth)
+      console.log(event);
+      let string = Buffer.from(contents, `base64`);
+      string = string.toString();
       // console.log(2);
-      const drive = google.drive({ version: "v3", auth });
-      //parents: ["1mE19ag5RkacYoggXaEX9Q0YouxHWLo6l"],
 
+      const drive = google.drive({ version: "v3", auth });
+     
+
+      //const imageStream = await client.getMessageContent('13421968197698');
       var fileMetadata = {
-        'name': 'photo.jpg'
+        name: `${event.source.userId}.jpg`,
+        parents: ["1OvCSUaVTUfTQ-aSidn9lOOa0oHKYKcWl"],
       };
       var media = {
-        mimeType: 'image/jpeg',
-        body: fs.createReadStream('files/photo.jpg')
+        mimeType: "image/jpeg",
+        body: imageStream,
       };
-      drive.files.create({
-        resource: fileMetadata,
-        media: media,
-        fields: 'id'
-      }, function (err, file) {
-        if (err) {
-          // Handle error
-          console.error(err);
-        } else {
-          console.log('File Id: ', file.id);
-        }
-      });
-      /*
-         drive.files.create(
-          {
-            resource: fileMetadata,
-            media: media,
-            fields: "id",
-          },
-          function (err, file) {
-            if (err) {
-              // Handle error
-              console.error(err);
-            } else {
-              console.log("File Id: ", file.id);
-            }
+      drive.files.create(
+        {
+          resource: fileMetadata,
+          media: media,
+          fields: "id",
+        },
+        function (err, file) {
+          if (err) {
+            // Handle error
+            console.error(err);
+          } else {
+            console.log("File Id: ", file.data.id);
+            client.replyMessage(event.replyToken,{type:'text',text:`保存に成功したよ！https://drive.google.com/uc?id=${file.data.id}`})
           }
-        )
-        */
+        }
+      );
     }
-  } else {
-    //動作確認で鸚鵡返し
-    return client.replyMessage(event.replyToken, {
-      type: "text",
-      text: event.message.text,
-    });
+  } else if (event.message.type === "text") {
+  client.replyMessage(event.replyToken,{type:'text',text:event.message.text})
   }
 }
 
