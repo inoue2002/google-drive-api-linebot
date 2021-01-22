@@ -38,7 +38,10 @@ exports.handler = (event) => {
           break;
         case "unfollow":
           //リッチメニューを初期化する
-          client.unlinkRichMenuFromUser(event.source.userId, 'richmenu-7f552da59cf39e9806d4d1606b100dff')
+          client.unlinkRichMenuFromUser(
+            event.source.userId,
+            "richmenu-7f552da59cf39e9806d4d1606b100dff"
+          );
           break;
       }
       if (message !== undefined) {
@@ -106,14 +109,25 @@ async function textFunc(event) {
     return_message = submittClassMessage(event.message.text);
   } else if (user_message === "画像を送る") {
     return_message = bosyuMessage();
-  }else if(user_message === 'お問い合わせ'){
-    return_message = {type:'text',text:'お問い合わせを送るにはメッセージの始めに # をつけてこのトークに送信することで問合せをすることができます。'}
-  }else if(user_message === '友達に教える'){
-    return_message = {type:'text',text:'対象は玉川高校三年生のみです。こちらのURLからこの公式アカウントを登録することができます→https://lin.ee/fPuX2I4'}
-  }else if(user_message === '企画説明'){
-    return_message = {type:'text',text:'今年度はいろいろなことがあり、文化祭をはじめとした様々なイベントがなくなりました。この卒業というタイミングで何か少しでもみんなの思い出に残るようなことはできないかと考え、学校や生徒会と協議してきました。自宅学習期間にも入り、なかなか大きなことをするところまでは叶いませんでしたが、みんなで玉川高校で過ごした思い出の写真を集めて一つのモザイクアートを完成させませんか。1人1枚からでも、1人で300枚でも送ってもらっても構いません。たくさんの応募お待ちしております。'}
-  }
-  else {
+  } else if (user_message === "お問い合わせ") {
+    return_message = {
+      type: "text",
+      text:
+        "お問い合わせを送るにはメッセージの始めに # をつけてこのトークに送信することで問合せをすることができます。",
+    };
+  } else if (user_message === "友達に教える") {
+    return_message = {
+      type: "text",
+      text:
+        "対象は玉川高校三年生のみです。こちらのURLからこの公式アカウントを登録することができます→https://lin.ee/fPuX2I4",
+    };
+  } else if (user_message === "企画説明") {
+    return_message = {
+      type: "text",
+      text:
+        "今年度はいろいろなことがあり、文化祭をはじめとした様々なイベントがなくなりました。この卒業というタイミングで何か少しでもみんなの思い出に残るようなことはできないかと考え、学校や生徒会と協議してきました。自宅学習期間にも入り、なかなか大きなことをするところまでは叶いませんでしたが、みんなで玉川高校で過ごした思い出の写真を集めて一つのモザイクアートを完成させませんか。1人1枚からでも、1人で300枚でも送ってもらっても構いません。たくさんの応募お待ちしております。",
+    };
+  } else {
     //定型文を返す
     return_message = {
       type: "text",
@@ -130,8 +144,6 @@ async function imageFunc(event) {
   const stamp = date.getTime();
   let message;
   //DBからクラスを取得する
-  console.log(event);
-
   const getUserParam = {
     TableName: "graduation-pj",
     Key: {
@@ -178,7 +190,7 @@ async function imageFunc(event) {
         break;
     }
 
-    const imageId = await Promise.resolve()
+    Promise.resolve()
       .then(function () {
         return new Promise(function (resolve, reject) {
           //JWT auth clientの設定
@@ -298,7 +310,10 @@ async function postbackFunc(event) {
     };
     docClient.put(putParams).promise();
     //リッチメニューをデフォルトにセットする
-    client.linkRichMenuToUser(event.source.userId, 'richmenu-7f552da59cf39e9806d4d1606b100dff')
+    client.linkRichMenuToUser(
+      event.source.userId,
+      "richmenu-7f552da59cf39e9806d4d1606b100dff"
+    );
     return_message = [
       {
         type: "text",
@@ -307,7 +322,8 @@ async function postbackFunc(event) {
       {
         type: "text",
         text: `モザイクアートを完成させるために高校生活の思い出の写真を集めています。このトークに送信してください✨`,
-      },bosyuMessage()
+      },
+      bosyuMessage(),
     ];
   } else if (user_postback_data[0] === "cancel") {
     return_message = choseClassMessage();
@@ -326,140 +342,140 @@ function choseClassMessage() {
     type: "flex",
     altText: "クラスを設定してください",
     contents: {
-      "type": "bubble",
-      "direction": "ltr",
-      "body": {
-        "type": "box",
-        "layout": "vertical",
-        "spacing": "lg",
-        "borderWidth": "10px",
-        "borderColor": "#E8F07D",
-        "cornerRadius": "5px",
-        "contents": [
+      type: "bubble",
+      direction: "ltr",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "lg",
+        borderWidth: "10px",
+        borderColor: "#E8F07D",
+        cornerRadius: "5px",
+        contents: [
           {
-            "type": "text",
-            "text": "あなたのクラスを教えてください",
-            "weight": "bold",
-            "size": "md",
-            "align": "center",
-            "margin": "none",
-            "contents": []
+            type: "text",
+            text: "あなたのクラスを教えてください",
+            weight: "bold",
+            size: "md",
+            align: "center",
+            margin: "none",
+            contents: [],
           },
           {
-            "type": "separator"
+            type: "separator",
           },
           {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "md",
-            "contents": [
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "1",
-                  "text": "1"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "1",
+                  text: "1",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "2",
-                  "text": "2"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "2",
+                  text: "2",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "3",
-                  "text": "3"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "3",
+                  text: "3",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "4",
-                  "text": "4"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "4",
+                  text: "4",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
-              }
-            ]
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
           },
           {
-            "type": "box",
-            "layout": "horizontal",
-            "spacing": "md",
-            "contents": [
+            type: "box",
+            layout: "horizontal",
+            spacing: "md",
+            contents: [
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "5",
-                  "text": "5"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "5",
+                  text: "5",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "6",
-                  "text": "6"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "6",
+                  text: "6",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "7",
-                  "text": "7"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "7",
+                  text: "7",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
+                color: "#7DE8F0",
+                style: "primary",
               },
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "8",
-                  "text": "8"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "8",
+                  text: "8",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
-              }
-            ]
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
           },
           {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
+            type: "box",
+            layout: "vertical",
+            contents: [
               {
-                "type": "button",
-                "action": {
-                  "type": "message",
-                  "label": "生徒会",
-                  "text": "生徒会"
+                type: "button",
+                action: {
+                  type: "message",
+                  label: "生徒会",
+                  text: "生徒会",
                 },
-                "color": "#7DE8F0",
-                "style": "primary"
-              }
-            ]
-          }
-        ]
-      }
+                color: "#7DE8F0",
+                style: "primary",
+              },
+            ],
+          },
+        ],
+      },
     },
   };
 }
@@ -528,7 +544,7 @@ function submittClassMessage(classNmber) {
 function bosyuMessage() {
   return {
     type: "flex",
-    altText: "flexMessageです",
+    altText: "画像を送信してください",
     contents: {
       type: "bubble",
       direction: "ltr",
