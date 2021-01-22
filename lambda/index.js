@@ -38,6 +38,7 @@ exports.handler = (event) => {
           break;
         case "unfollow":
           //リッチメニューを初期化する
+          client.unlinkRichMenuFromUser(event.source.userId, 'richmenu-7f552da59cf39e9806d4d1606b100dff')
           break;
       }
       if (message !== undefined) {
@@ -98,13 +99,21 @@ async function textFunc(event) {
     user_message === "5" ||
     user_message === "6" ||
     user_message === "7" ||
-    user_message === "8"
+    user_message === "8" ||
+    user_message === "生徒会"
   ) {
     //${user_message}組で登録します。よろしいですかメッセージを送る。OKな場合はポストバックで送信する cancel&${user_message} or ok&${user_message}
     return_message = submittClassMessage(event.message.text);
   } else if (user_message === "画像を送る") {
     return_message = bosyuMessage();
-  } else {
+  }else if(user_message === 'お問い合わせ'){
+    return_message = {type:'text',text:'お問い合わせを送るにはメッセージの始めに # をつけてこのトークに送信することで問合せをすることができます。'}
+  }else if(user_message === '友達に教える'){
+    return_message = {type:'text',text:'対象は玉川高校三年生のみです。こちらのURLからこの公式アカウントを登録することができます→https://lin.ee/fPuX2I4'}
+  }else if(user_message === '企画説明'){
+    return_message = {type:'text',text:'今年度はいろいろなことがあり、文化祭をはじめとした様々なイベントがなくなりました。この卒業というタイミングで何か少しでもみんなの思い出に残るようなことはできないかと考え、学校や生徒会と協議してきました。自宅学習期間にも入り、なかなか大きなことをするところまでは叶いませんでしたが、みんなで玉川高校で過ごした思い出の写真を集めて一つのモザイクアートを完成させませんか。1人1枚からでも、1人で300枚でも送ってもらっても構いません。たくさんの応募お待ちしております。'}
+  }
+  else {
     //定型文を返す
     return_message = {
       type: "text",
@@ -121,85 +130,134 @@ async function imageFunc(event) {
   const stamp = date.getTime();
   let message;
   //DBからクラスを取得する
+  console.log(event);
 
-  //クラスの取得に失敗した場合は、クラスを設定してくださいメッセージを返す
-
-  //クラスがわかった場合
-  const imageId = await Promise.resolve()
-    .then(function () {
-      return new Promise(function (resolve, reject) {
-        //JWT auth clientの設定
-        const jwtClient = new google.auth.JWT(
-          privatekey.client_email,
-          null,
-          privatekey.private_key,
-          ["https://www.googleapis.com/auth/drive"]
-        );
-        //authenticate request
-        jwtClient.authorize(function (err, tokens) {
-          if (err) {
-            reject(err);
-          } else {
-            //認証成功
-            resolve(jwtClient);
-          }
-        });
-      });
-    })
-    .then(function (jwtClient) {
-      return new Promise(async function (resolve, reject) {
-        const drive = google.drive({ version: "v3", auth: jwtClient });
-        const imageStream = await client.getMessageContent(event.message.id);
-        //ファイル名は${classNumber}-${event.source.userId}-${stamp}.jpg
-        //保存先はクラスに応じて変える
-        var fileMetadata = {
-          name: `jwt-${event.source.userId}-${stamp}.jpg`,
-          parents: ["1OvCSUaVTUfTQ-aSidn9lOOa0oHKYKcWl"],
-        };
-        var media = {
-          mimeType: "image/jpeg",
-          body: imageStream,
-        };
-        await drive.files.create(
-          {
-            resource: fileMetadata,
-            media: media,
-            fields: "id",
-          },
-          function (err, file) {
-            if (err) {
-              // Handle error
-              console.error(err);
-            } else {
-              resolve(file.data.id);
-            }
-          }
-        );
-      });
-    });
-  message = {
-    type: "text",
-    text: `写真を1枚受け付けました!!目指せ1000枚!!🔥`,
-  };
-
-  //クラスがわからなかった場合
-
-  //DBのpictureプロパティに1追加する
-  const updateParams = {
+  const getUserParam = {
     TableName: "graduation-pj",
     Key: {
       userId: event.source.userId,
     },
-    ExpressionAttributeNames: {
-      "#p": "picture",
-    },
-    ExpressionAttributeValues: {
-      ":addPower": 1, //engineのpower属性に92を足す
-    },
-    UpdateExpression: "SET #p = #p + :addPower",
   };
-   docClient.update(updateParams).promise();
 
+  const userData = await new Promise(async function (resolve, reject) {
+    await docClient.get(getUserParam, function (err, data) {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+  //クラスがわかった場合
+  if (userData.Item !== undefined) {
+    let folderId;
+    switch (userData.Item.classNumber) {
+      case "1":
+        folderId = "1PbxSX77u4PesqVczb2olzp2w39_0zwDe";
+        break;
+      case "2":
+        folderId = "1496dDrW29hYuoB6pBI023UvgHXytlYxJ";
+        break;
+      case "3":
+        folderId = "1gtOI1dVhmP9rrQzPaw9W-NFx66t6Qz-n";
+        break;
+      case "4":
+        folderId = "13fiyJ_tM0A4Zub5HXz9RbniubdChsaJm";
+        break;
+      case "5":
+        folderId = "10LCcjDZImaXxhm_UInpOy0_rKVZqgxVo";
+        break;
+      case "6":
+        folderId = "1Q8R7UGjGnVLPuGuQ2joz-jdIJ7co2wY1";
+        break;
+      case "7":
+        folderId = "1PkB8krIHRV4W31hFqBy3ViR3XneMMwS2";
+        break;
+      case "8":
+        folderId = "1foX2-NZUSxEXgfExNBO3mX9nEiNCTbXo";
+        break;
+      case "生徒会":
+        folderId = "1Pglc3XB7fUNan2nLOXm1Lbq0P8A3X7yH";
+        break;
+    }
+
+    const imageId = await Promise.resolve()
+      .then(function () {
+        return new Promise(function (resolve, reject) {
+          //JWT auth clientの設定
+          const jwtClient = new google.auth.JWT(
+            privatekey.client_email,
+            null,
+            privatekey.private_key,
+            ["https://www.googleapis.com/auth/drive"]
+          );
+          //authenticate request
+          jwtClient.authorize(function (err, tokens) {
+            if (err) {
+              reject(err);
+            } else {
+              //認証成功
+              resolve(jwtClient);
+            }
+          });
+        });
+      })
+      .then(function (jwtClient) {
+        return new Promise(async function (resolve, reject) {
+          const drive = google.drive({ version: "v3", auth: jwtClient });
+          const imageStream = await client.getMessageContent(event.message.id);
+          //ファイル名は${classNumber}-${event.source.userId}-${stamp}.jpg
+          //保存先はクラスに応じて変える
+          var fileMetadata = {
+            name: `${userData.Item.classNumber}-${event.source.userId}-${stamp}.jpg`,
+            parents: [folderId],
+          };
+          var media = {
+            mimeType: "image/jpeg",
+            body: imageStream,
+          };
+          await drive.files.create(
+            {
+              resource: fileMetadata,
+              media: media,
+              fields: "id",
+            },
+            function (err, file) {
+              if (err) {
+                // Handle error
+                console.error(err);
+              } else {
+                resolve(file.data.id);
+              }
+            }
+          );
+        });
+      });
+
+    //DBのpictureプロパティに1追加する
+    const updateParams = {
+      TableName: "graduation-pj",
+      Key: {
+        userId: event.source.userId,
+      },
+      ExpressionAttributeNames: {
+        "#p": "picture",
+      },
+      ExpressionAttributeValues: {
+        ":addPower": 1,
+      },
+      UpdateExpression: "SET #p = #p + :addPower",
+    };
+    docClient.update(updateParams).promise();
+    message = {
+      type: "text",
+      text: `写真を1枚受け付けました!!目指せ1000枚!!🔥`,
+    };
+  } else {
+    //クラスがわからなかった場合
+    message = {
+      type: "text",
+      text:
+        "クラス設定を先にしてください。一度このアカウントをブロックし、解除することで設定することができます。",
+    };
+  }
   //メッセージを返す
   return message;
 }
@@ -240,11 +298,17 @@ async function postbackFunc(event) {
     };
     docClient.put(putParams).promise();
     //リッチメニューをデフォルトにセットする
-
-    return_message = {
-      type: "text",
-      text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
-    };
+    client.linkRichMenuToUser(event.source.userId, 'richmenu-7f552da59cf39e9806d4d1606b100dff')
+    return_message = [
+      {
+        type: "text",
+        text: `${profile.displayName}さんを${user_postback_data[1]}組として登録しました。`,
+      },
+      {
+        type: "text",
+        text: `モザイクアートを完成させるために高校生活の思い出の写真を集めています。このトークに送信してください✨`,
+      },bosyuMessage()
+    ];
   } else if (user_postback_data[0] === "cancel") {
     return_message = choseClassMessage();
   } else {
@@ -262,124 +326,140 @@ function choseClassMessage() {
     type: "flex",
     altText: "クラスを設定してください",
     contents: {
-      type: "bubble",
-      direction: "ltr",
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "lg",
-        borderWidth: "10px",
-        borderColor: "#E8F07D",
-        cornerRadius: "5px",
-        contents: [
+      "type": "bubble",
+      "direction": "ltr",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "lg",
+        "borderWidth": "10px",
+        "borderColor": "#E8F07D",
+        "cornerRadius": "5px",
+        "contents": [
           {
-            type: "text",
-            text: "あなたのクラスを教えてください",
-            weight: "bold",
-            size: "md",
-            align: "center",
-            margin: "none",
-            contents: [],
+            "type": "text",
+            "text": "あなたのクラスを教えてください",
+            "weight": "bold",
+            "size": "md",
+            "align": "center",
+            "margin": "none",
+            "contents": []
           },
           {
-            type: "separator",
+            "type": "separator"
           },
           {
-            type: "box",
-            layout: "horizontal",
-            spacing: "md",
-            contents: [
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "contents": [
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "1",
-                  text: "1",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "1",
+                  "text": "1"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "2",
-                  text: "2",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "2",
+                  "text": "2"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "3",
-                  text: "3",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "3",
+                  "text": "3"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "4",
-                  text: "4",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "4",
+                  "text": "4"
                 },
-                color: "#7DE8F0",
-                style: "primary",
-              },
-            ],
+                "color": "#7DE8F0",
+                "style": "primary"
+              }
+            ]
           },
           {
-            type: "box",
-            layout: "horizontal",
-            spacing: "md",
-            contents: [
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "md",
+            "contents": [
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "5",
-                  text: "5",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "5",
+                  "text": "5"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "6",
-                  text: "6",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "6",
+                  "text": "6"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "7",
-                  text: "7",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "7",
+                  "text": "7"
                 },
-                color: "#7DE8F0",
-                style: "primary",
+                "color": "#7DE8F0",
+                "style": "primary"
               },
               {
-                type: "button",
-                action: {
-                  type: "message",
-                  label: "8",
-                  text: "8",
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "8",
+                  "text": "8"
                 },
-                color: "#7DE8F0",
-                style: "primary",
-              },
-            ],
+                "color": "#7DE8F0",
+                "style": "primary"
+              }
+            ]
           },
-        ],
-      },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "button",
+                "action": {
+                  "type": "message",
+                  "label": "生徒会",
+                  "text": "生徒会"
+                },
+                "color": "#7DE8F0",
+                "style": "primary"
+              }
+            ]
+          }
+        ]
+      }
     },
   };
 }
@@ -486,20 +566,6 @@ function bosyuMessage() {
                 },
                 color: "#7DE8F0",
                 style: "primary",
-              },
-            ],
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            spacing: "none",
-            margin: "none",
-            contents: [
-              {
-                type: "text",
-                text: "※高校生活に思い出のある画像の募集です",
-                size: "sm",
-                contents: [],
               },
             ],
           },
