@@ -1,0 +1,59 @@
+{
+    "size": {
+      "width": 2500,
+      "height": 1686
+    },
+    "selected": true,
+    "name": "1",
+    "chatBarText": "お知らせ",
+    "areas": [
+      {
+        "bounds": {
+          "x": 182,
+          "y": 235,
+          "width": 2202,
+          "height": 685
+        },
+        "action": {
+          "type": "message",
+          "text": "画像を送る"
+        }
+      },
+      {
+        "bounds": {
+          "x": 186,
+          "y": 1007,
+          "width": 627,
+          "height": 565
+        },
+        "action": {
+          "type": "message",
+          "text": "友達に教える"
+        }
+      },
+      {
+        "bounds": {
+          "x": 945,
+          "y": 957,
+          "width": 623,
+          "height": 640
+        },
+        "action": {
+          "type": "message",
+          "text": "企画説明"
+        }
+      },
+      {
+        "bounds": {
+          "x": 1716,
+          "y": 970,
+          "width": 631,
+          "height": 606
+        },
+        "action": {
+          "type": "message",
+          "text": "お問い合わせ"
+        }
+      }
+    ]
+  }
